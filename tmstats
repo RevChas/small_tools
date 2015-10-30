@@ -1,0 +1,136 @@
+#!/bin/zsh
+
+# Copyright 2015 Charles Herbig
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# I run this in a small tmux pane to watch what's going on
+
+autoload -U colors && colors
+
+function print_help() {
+echo "Usage: $(basename $0 ) [OPTIONS]"
+echo "	-t Show iTunes status"
+echo "	-u Show logged in users"
+echo "	-p Show uptime stats"
+echo "	-a Show all stats"
+echo "	-m Show all stats supporteed on a Mac"
+echo "	-l Show all stats supporteed on Linux"
+echo "	-w Change wait time between updates (default is 5 seconds)"
+echo "	-h This help"
+echo The order the flags appear on the command line determines the order they appear in the status report.
+
+return
+}
+
+function print_itunes () {
+/Users/chas/bin/itunes status
+echo $fg_no_bold[blue]=========$reset_color
+return
+}
+
+function print_users () {
+who
+echo $fg_no_bold[blue]=========$reset_color
+return
+}
+
+function print_uptime () {
+myuptime=$( uptime )
+echo $myuptime | cut -d , -f 1-2
+echo $myuptime | cut -d , -f 3
+echo $myuptime | cut -d , -f 4
+echo $fg_no_bold[blue]=========$reset_color
+return
+}
+
+function print_nothing () {
+echo $fg_no_bold[blue]=========$reset_color
+return
+}
+
+ITUNESF=1
+USERSF=2
+UPTIMEF=3
+
+DISPINDEX=0
+set -A DISPARRAY
+
+WAIT_TIME=15
+
+while getopts tupmlw:h myopt  ; do
+	case $myopt in 
+		t)
+			DISPARRAY+=$ITUNESF ;
+			DISPINDEX=$(($DISPINDEX + 1 )) ;
+			;;
+		u)
+			DISPARRAY+=$USERSF ;
+			DISPINDEX=$(($DISPINDEX + 1 )) ;
+			;;
+		p)
+			DISPARRAY+=$UPTIMEF ;
+			DISPINDEX=$(($DISPINDEX + 1 )) ;
+			;;
+		m)
+			DISPARRAY=( $ITUNESF $USERSF $UPTIMEF ) ;
+			DISPINDEX=2 ;
+			;;
+		l)
+			DISPARRAY=( $USERSF $UPTIMEF ) ;
+			DISPINDEX=1 ;
+			;;
+		w)
+			WAIT_TIME=$OPTARG ;
+			;;
+		h)
+			print_help ;
+			exit 0 ;
+			;;
+		?)
+			echo "Exiting" >&2
+			exit 1
+			;;
+		esac
+done
+
+myhost=$( hostname -s )
+while [ 0 -eq 0 ] ; do
+	unset PRINTARRAY
+	set -A PRINTARRAY
+	for fn in ${DISPARRAY[*]} ; do
+		case $fn in
+			1)
+				PRINTARRAY+=$(print_itunes | tr -s ' ' ' ' ) ;
+				;;
+			2)
+				PRINTARRAY+=$(print_users | tr -s ' ' ' ' ) ;
+				;;
+			3)
+				PRINTARRAY+=$(print_uptime | tr -s ' ' ' ' ) ;
+				;;
+			?)
+				print_nothing ;
+				;;
+		esac
+	done
+	clear
+	echo $fg_no_bold[red]Hostname: $fg_no_bold[cyan]${myhost}$reset_color
+	for pn in ${PRINTARRAY[*]} ; do
+		print $pn
+	done
+	date
+	sleep $WAIT_TIME
+done
+
