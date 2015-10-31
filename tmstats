@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+setopt NOEQUALS
+
 # Copyright 2015 Charles Herbig
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +43,8 @@ return
 }
 
 function print_users () {
-who
+mycols=$( stty size | cut -d ' ' -f 2 )
+who ${PLATWF} | tr -s '\t ()' '    ' | cut -c 1-$mycols
 echo $fg_no_bold[blue]=========$reset_color
 return
 }
@@ -66,6 +69,14 @@ UPTIMEF=3
 
 DISPINDEX=0
 set -A DISPARRAY
+
+plat=$(uname -s)
+# Platform specific who flags
+PLATWF=""
+if [ "$plat" == "Linux" ] ; then
+	PLATWF="--ids"
+fi
+
 
 WAIT_TIME=15
 
