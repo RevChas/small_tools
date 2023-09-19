@@ -6,10 +6,9 @@
 # If no second argument, increments the least significant version element (patch/build)
 # Limitation: only built to work on version numbers without a trailing tag
 increment_version() {
-	local delimiter=.
-	local array=($(echo "${1}" | tr $delimiter '\n'))
+	local array=($(echo "${1}" | tr '.' '\n'))
 	if [ $# -eq 1 ] ; then
-		whichNum=${#array[*]}
+		let whichNum=${#array[*]}-1
 	else
 		whichNum=${2}
 	fi
